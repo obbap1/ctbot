@@ -10,5 +10,6 @@ func Init() *gorm.DB {
 	if err != nil {
 		panic("failed to connect database")
 	}
+	db.AutoMigrate(&Reminder{})
 	return db
 }

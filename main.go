@@ -10,4 +10,8 @@ func main() {
 	db.Init()
 	// initialize bot
 	bot.Init()
+
+	ch := make(chan struct{}, 1)
+
+	<-ch
 }
