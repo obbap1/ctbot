@@ -7,11 +7,7 @@ import (
 
 func main() {
 	// initialize database
-	db.Init()
+	d := db.Init()
 	// initialize bot
-	bot.Init()
-
-	ch := make(chan struct{}, 1)
-
-	<-ch
+	bot.Init(d)
 }

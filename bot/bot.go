@@ -3,7 +3,6 @@ package bot
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -30,37 +29,39 @@ func Init(db *gorm.DB) {
 				// sorry, we dont support bots
 				return
 			}
+			// eg. save paschal 05/12
+			// delete paschal
+			// get 05/12
+			// update paschal 04/12
 			text := strings.Split(update.Message.Text, " ")
-			if len(text) != 3 {
-				// invalid text, please use this format
+			if len(text) == 0 {
+				// invalid text
 				return
 			}
 			operation := strings.ToLower(strings.TrimSpace(text[0]))
 			if !IsValidOp(operation) {
-				// invalid operation, please use either a "save", "update" or "delete"
+				// invalid operation, please use either a "save", "get", "update" or "delete"
 				return
 			}
 			op := ToOp(operation)
-			name := strings.ToLower(strings.TrimSpace(text[1]))
-			date := strings.Split(strings.TrimSpace(text[2]), "/")
-			if len(date) != 2 {
-				// invalid date format, please use DD/MM
+			if r := op.Requirements(); r.numberOfCommands != len(text)-1 {
+				// invalid text, please use this format
 				return
 			}
-			day, err := strconv.Atoi(date[0])
+
+			name, day, month, err := op.Convert(text)
 			if err != nil {
+				// invalid text
 				return
 			}
-			if day <= 0 || day > 31 {
-				// invalid day, must be between 1 and 31
-				return
-			}
-			month, err := strconv.Atoi(date[1])
-			if err != nil {
-				return
-			}
-			if month <= 0 || month > 12 {
-				// invalid month, month must be between 1 and 12
+
+			if err := op.Do(&database.Reminder{
+				UserID:    int(update.Message.From.ID),
+				Month:     month,
+				Day:       day,
+				Celebrant: name,
+			}); err != nil {
+				// couldnt perform operation
 				return
 			}
 
@@ -92,4 +93,9 @@ func Init(db *gorm.DB) {
 
 		}
 	}
+}
+
+func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string) error {
+	_, err := bot.Send(tgbotapi.NewMessage(chatID, text))
+	return err
 }
